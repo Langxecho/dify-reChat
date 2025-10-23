@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: dify-rechat-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: dify_rechat
+      MYSQL_USER: dify_user
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-dify_password}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dify-rechat
+
+  # FastAPI后端
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dify-rechat-backend
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql+pymysql://dify_user:${MYSQL_PASSWORD:-dify_password}@mysql:3306/dify_rechat?charset=utf8mb4
+      SECRET_KEY: ${SECRET_KEY:-your-super-secret-key-please-change-in-production}
+      DIFY_API_URL: ${DIFY_API_URL:-https://api.dify.ai}
+      CORS_ORIGINS: '["http://localhost", "http://localhost:80"]'
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    command: >
+      sh -c "
+        alembic upgrade head &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000
+      "
+    networks:
+      - dify-rechat
+
+  # Vue前端
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: dify-rechat-frontend
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - dify-rechat
+
+volumes:
+  mysql_data:
+
+networks:
+  dify-rechat:
+    driver: bridge
