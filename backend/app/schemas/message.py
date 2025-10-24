@@ -33,6 +33,7 @@ class ChatRequest(BaseModel):
     """聊天请求Schema"""
     message: str = Field(..., min_length=1, description="用户消息")
     conversation_id: Optional[int] = Field(None, description="对话ID,不传则创建新对话")
+    workflow_id: Optional[int] = Field(None, description="工作流ID,不传则使用默认工作流")
 
 
 class ChatResponse(BaseModel):

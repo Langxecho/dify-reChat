@@ -29,6 +29,13 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
             detail="该邮箱已被注册"
         )
 
+    # 验证密码长度（仅最小长度）
+    if len(user_data.password) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="密码长度不能少于6位"
+        )
+
     # 创建用户
     user = User(
         email=user_data.email,

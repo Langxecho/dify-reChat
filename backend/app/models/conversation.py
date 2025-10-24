@@ -33,3 +33,4 @@ class Conversation(Base):
     # 关系
     user = relationship("User", back_populates="conversations")
     messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan")
+    workflow = relationship("ConversationWorkflow", back_populates="conversation", uselist=False)

@@ -4,22 +4,24 @@
 """
 from datetime import datetime, timedelta
 from typing import Optional
+import hashlib
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from .config import settings
 
-# 密码加密上下文
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
+# 使用SHA-256作为密码哈希算法，更稳定且无长度限制
+def get_password_hash(password: str) -> str:
+    """使用SHA-256生成密码哈希"""
+    # 添加盐值来提高安全性
+    salt = "dify_rechat_salt_2024"  # 在生产环境中应该使用随机盐值
+    salted_password = password + salt
+    return hashlib.sha256(salted_password.encode('utf-8')).hexdigest()
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """验证密码"""
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-def get_password_hash(password: str) -> str:
-    """生成密码哈希"""
-    return pwd_context.hash(password)
+    # 在验证时也使用相同的盐值
+    salt = "dify_rechat_salt_2024"
+    salted_password = plain_password + salt
+    return hashlib.sha256(salted_password.encode('utf-8')).hexdigest() == hashed_password
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
